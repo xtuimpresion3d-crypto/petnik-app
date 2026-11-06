@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PETNIK - Tag Inteligente para Mascotas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #e0f7fa 0%, #ede7f6 50%, #fce4ec 100%);
+            --text-title: #9fa8da; 
+            --text-main: #5c5c5c;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --pill-bg: #ffffff;
+            --ws-color: #81c784;
+            --call-color: #90caf9;
+            --loc-color: #ffb74d;
+            --doc-color: #ce93d8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Nunito', sans-serif; }
+        
+        body { 
+            background: var(--bg-gradient); 
+            color: var(--text-main); 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .app-container { width: 100%; max-width: 400px; position: relative; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; margin-bottom: 10px; position: relative; z-index: 10; }
+        .logo-text { font-size: 20px; font-weight: 800; color: #757575; display: flex; align-items: center; gap: 5px; }
+        .lang-selector { background: rgba(255,255,255,0.9); border: none; border-radius: 15px; padding: 6px 12px; font-weight: 700; color: #757575; cursor: pointer; outline: none; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* Huellitas flotantes decorativas */
+        .floating-paw { position: absolute; z-index: 1; opacity: 0.4; animation: floatPaw 4s ease-in-out infinite alternate; }
+        @keyframes floatPaw { from { transform: translateY(0px) rotate(0deg); } to { transform: translateY(-8px) rotate(5deg); } }
+
+        /* LANDING PAGE ESTÉTICA */
+        .landing-hero { text-align: center; margin-bottom: 15px; position: relative; z-index: 2; }
+        .landing-logo { max-width: 200px; width: 100%; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08)); margin-bottom: 2px; }
+        .landing-subtitle { color: #757575; font-size: 14px; font-weight: 800; letter-spacing: 0.5px; }
+
+        .video-container { width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 20px; background: #fff; position: relative; z-index: 2; border: 4px solid white; }
+        .video-container video { width: 100%; height: auto; display: block; object-fit: cover; }
+
+        .estetic-card { background: var(--card-bg); backdrop-filter: blur(10px); padding: 22px 18px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.8); position: relative; z-index: 2; text-align: center; }
+
+        /* Beneficios */
+        .benefit-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; text-align: left; }
+        .benefit-item:last-child { margin-bottom: 20px; }
+        .benefit-icon { font-size: 18px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 12px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .benefit-title { color: #5a4b41; font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+        .benefit-desc { color: #757575; font-size: 12px; line-height: 1.4; font-weight: 600; }
+
+        /* GALERÍA ESTÉTICA "HECHO CON AMOR" */
+        .love-gallery-wrapper { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .love-models-row { display: flex; justify-content: center; gap: 12px; }
+        .love-model-card { background: white; padding: 8px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 48%; border: 2px solid white; }
+        .love-model-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 14px; display: block; }
+        
+        .love-tags-row { display: flex; justify-content: center; gap: 10px; }
+        .love-tag-item { background: white; padding: 6px; border-radius: 16px; box-shadow: 0 3px 10px rgba(0,0,0,0.04); width: 31%; border: 2px solid white; }
+        .love-tag-item img { width: 100%; height: 65px; object-fit: cover; border-radius: 10px; display: block; }
+
+        /* Botones e Inputs */
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 22px; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; margin-top: 10px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-ws { background-color: var(--ws-color); }
+        .btn-call { background-color: var(--call-color); }
+        .btn-loc { background-color: var(--loc-color); }
+        .btn-docs { background-color: var(--doc-color); }
+        .btn-edit { background-color: transparent; color: #bdbdbd; box-shadow: none; font-size: 14px; margin-top: 20px; }
+        
+        .form-group { margin-bottom: 12px; }
+        input, textarea { width: 100%; padding: 14px; border: none; border-radius: 18px; font-size: 14px; background: #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.03); color: #757575; outline: none; text-align: center; font-weight: 700; }
+        input::placeholder, textarea::placeholder { color: #bdbdbd; font-weight: 600; }
+
+        /* Estilos Heredados (Fichas, Docs, Tutoriales) */
+        .photo-container { position: relative; width: 160px; height: 160px; margin: 0 auto 10px auto; }
+        .pet-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 6px solid #e1bee7; background-color: #fff; position: absolute; top: 10px; left: 10px; z-index: 2; }
+        .floating-icon { position: absolute; z-index: 3; }
+        .icon-heart-left { top: 40%; left: -10px; font-size: 20px; color: #ff8a80; }
+        .icon-star-right { top: 60%; right: -5px; font-size: 24px; color: #81d4fa; }
+        .icon-paw-bottom { bottom: 0; right: 20px; font-size: 18px; color: #b39ddb; }
+        .pet-name { font-size: 28px; font-weight: 800; color: var(--text-title); text-align: center; margin-bottom: 25px; line-height: 1.2; }
+        .info-pill { background: var(--pill-bg); border-radius: 25px; padding: 15px 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); color: #757575; font-size: 16px; font-weight: 600; }
+        .pill-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; }
+        .icon-owner { background: #ffcdd2; }
+        .icon-zone { background: #e0f7fa; }
+        .icon-info { background: #d1c4e9; }
+
+        .docs-block { background: white; padding: 20px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); text-align: left; }
+        .docs-title { font-size: 14px; color: #9fa8da; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .docs-text { font-size: 16px; color: #757575; font-weight: 600; line-height: 1.5; white-space: pre-wrap; }
+        .no-doc-msg { font-size: 14px; color: #bdbdbd; font-style: italic; margin-top: 5px; text-align: center; }
+        .del-file-btn { color: #ef5350; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-block; margin-top: 8px; padding: 5px 10px; background: #ffebee; border-radius: 10px; }
+
+        .lost-banner { background: #ffebee; border: 2px solid #ef5350; border-radius: 20px; padding: 15px; text-align: center; margin-bottom: 20px; animation: pulse 1.5s infinite; }
+        .lost-title { color: #c62828; font-weight: 800; font-size: 18px; margin-bottom: 5px; }
+        .lost-text { color: #d32f2f; font-size: 14px; font-weight: 700; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        .tutorial-container, .docs-container { background: rgba(255,255,255,0.85); padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; z-index: 2; }
+        .slide { display: none; text-align: center; }
+        .slide.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        .slide-img { font-size: 60px; margin: 15px 0; }
+        .slide-title { color: var(--text-title); font-size: 20px; font-weight: 800; margin-bottom: 15px; }
+        .slide-text { color: #757575; font-size: 14px; line-height: 1.5; margin-bottom: 15px; text-align: left; }
+        .slide-text ul { padding-left: 20px; margin-top: 10px; }
+        .slide-text li { margin-bottom: 10px; }
+        .scrollable-content { max-height: 50vh; overflow-y: auto; padding-right: 5px; }
+        .tutorial-dots { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+        .dot { width: 10px; height: 10px; background: #e0e0e0; border-radius: 50%; }
+        .dot.active { background: #9fa8da; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(3px); }
+        .modal-box { background: white; padding: 25px; border-radius: 30px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: fadeIn 0.3s; }
+        .modal-title { color: var(--text-title); font-size: 18px; font-weight: 800; margin-bottom: 15px; }
+        .modal-btn-forgot { color: #ff8a80; font-size: 13px; font-weight: 800; cursor: pointer; margin-top: 15px; display: block; text-decoration: underline; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+        #loading { text-align: center; padding: 50px; font-weight: 700; color: #757575; font-size: 18px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- Decoración de Huellas -->
+    <span class="floating-paw hidden-in-profile" style="top: 40px; left: 10px; font-size: 22px; color: #b39ddb;">🐾</span>
+    <span class="floating-paw hidden-in-profile" style="top: 280px; right: 15px; font-size: 18px; color: #ff8a80; animation-delay: 1s;">🐾</span>
+    <span class="floating-paw hidden-in-profile" style="bottom: 150px; left: 15px; font-size: 20px; color: #81d4fa; animation-delay: 2s;">🐾</span>
+
+    <div class="top-bar">
+        <div class="logo-text hidden" id="internal-logo">🐾 petnik</div>
+        <select id="lang-select" class="lang-selector" onchange="changeLanguage(this.value)">
+            <option value="es">🇦🇷 ES</option>
+            <option value="en">🇺🇸 EN</option>
+            <option value="pt">🇧🇷 PT</option>
+        </select>
+    </div>
+
+    <div id="loading">Cargando Petnik...</div>
+
+    <!-- 1. LANDING PAGE MULTIMEDIA -->
+    <div id="view-landing" class="hidden">
+        
+        <div class="landing-hero">
+            <img src="1793747871900(1).jpg" alt="Petnik Logo" class="landing-logo">
+            <p id="lbl-landing-subtitle" class="landing-subtitle">La chapita inteligente definitiva</p>
+        </div>
+
+        <div class="video-container">
+            <video autoplay muted loop playsinline>
+                <source src="gemini_generated_video_cea974e5 (1).mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <!-- SECCIÓN BENEFICIOS TRADUCIBLES -->
+        <div class="estetic-card">
+            <div class="benefit-item">
+                <div class="benefit-icon" style="background: #e0f7fa;">⚡</div>
+                <div>
+                    <h4 id="b-t1" class="benefit-title">Escaneo Rápido</h4>
+                    <p id="b-d1" class="benefit-desc">Funciona con tecnología NFC. No necesita de apps; se lee apoyando el celular al instante.</p>
+                </div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-icon" style="background: #ede7f6;">🏥</div>
+                <div>
+                    <h4 id="b-t2" class="benefit-title">Salud al instante</h4>
+                    <p id="b-d2" class="benefit-desc">Llevá su libreta sanitaria y contacto directo del veterinario en su collar.</p>
+                </div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-icon" style="background: #ffebee;">🚨</div>
+                <div>
+                    <h4 id="b-t3" class="benefit-title">Modo Alerta Perdido</h4>
+                    <p id="b-d3" class="benefit-desc">Ante un extravío podés activar desde el panel la alerta de perdido; quien escanee verá la alerta y podrá comunicarse.</p>
+                </div>
+            </div>
+            <div class="benefit-item" style="margin-bottom: 20px;">
+                <div class="benefit-icon" style="background: #fff3e0;">✏️</div>
+                <div>
+                    <h4 id="b-t4" class="benefit-title">Datos 100% Editables</h4>
+                    <p id="b-d4" class="benefit-desc">¿Te mudaste o cambiaste el celular? Actualizá la info desde tu panel sin cambiar la chapita.</p>
+                </div>
+            </div>
+            <a href="https://wa.me/5491100000000?text=¡Hola!%20Quiero%20comprar%20mi%20Petnik" target="_blank" class="btn btn-ws" id="btn-buy-petnik">
+                🛍️ Quiero mi Petnik
+            </a>
+        </div>
+
+        <!-- ACCESO DUEÑOS -->
+        <div class="estetic-card">
+            <h3 id="lbl-already-petnik" style="color: #5a4b41; font-size: 15px; margin-bottom: 12px; font-weight: 800;">¿Ya tenés tu Petnik?</h3>
+            <div class="form-group"><input type="text" id="login-tag-id" placeholder="ID de la chapita (Ej: 000)"></div>
+            <div class="form-group"><input type="password" id="login-tag-pin" maxlength="4" placeholder="PIN de 4 dígitos" style="letter-spacing: 5px;"></div>
+            <button onclick="ownerLogin()" class="btn btn-call" id="btn-owner-login" style="background-color: #9fa8da;">Ingresar a mi panel</button>
+        </div>
+
+        <!-- GALERÍA ESTÉTICA "HECHO CON AMOR" -->
+        <div class="estetic-card" style="margin-bottom: 30px;">
+            <h3 id="lbl-made-love" style="color: #9fa8da; font-size: 16px; margin-bottom: 15px; font-weight: 800;">✨ Hecho con amor</h3>
+            
+            <div class="love-gallery-wrapper">
+                <div class="love-models-row">
+                    <div class="love-model-card"><img src="Gemini_Generated_Image (1).jpeg" alt="Petnik Bulldog"></div>
+                    <div class="love-model-card"><img src="Gemini_Generated_Image.jpeg" alt="Petnik Gato"></div>
+                </div>
+                <div class="love-tags-row">
+                    <div class="love-tag-item"><img src="1793830699351_2.jpg" alt="Chapita Rosa"></div>
+                    <div class="love-tag-item"><img src="1793830987817_2.jpg" alt="Chapita Menta"></div>
+                    <div class="love-tag-item"><img src="1793831135344_3.jpg" alt="Chapita Celeste"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 2. VISTA 0: TUTORIAL -->
+    <div id="view-tutorial" class="tutorial-container hidden">
+        <div id="slide-1" class="slide active">
+            <div id="t-s1-title" class="slide-title">¡BIENVENIDOS A PETNIK!</div>
+            <div class="slide-img">📱✨</div>
+            <div id="t-s1-text" class="slide-text" style="text-align: center;">
+                ¡Qué alegría tenerte por acá!<br><br>
+                Estás a punto de crear la identidad digital de tu mascota. Completando esta ficha, te asegurás de que tu mejor amigo esté siempre protegido y pueda volver a casa rápido ante cualquier emergencia.
+            </div>
+            <button onclick="nextSlide(2)" id="t-s1-btn" class="btn btn-call" style="background-color: #b39ddb;">Siguiente ➔</button>
+        </div>
+
+        <div id="slide-2" class="slide">
+            <div id="t-s2-title" class="slide-title">REGISTRAR A TU MASCOTA</div>
+            <div id="t-s2-text" class="slide-text scrollable-content">
+                Una vez en el sitio, completa la ficha de registro con los siguientes datos:
+                <ul>
+                    <li><b>Nombre de tu mascota.</b></li>
+                    <li><b>Tu nombre.</b></li>
+                    <li><b>Número de teléfono.</b> Atención: si tu número no es argentino, agregá el código de tu país antecedido por el símbolo +.</li>
+                    <li><b>Localización.</b> Tu zona, barrio o dirección.</li>
+                    <li><b>Información importante.</b> Detalla alergias, esterilización, conducta, etc.</li>
+                    <li><b>Foto.</b> Subí una imagen clara de tu mascota.</li>
+                    <li><b>PIN y Email.</b> Claves para poder editar a futuro.</li>
+                    <li><b>Mis Documentos.</b> Subí libretas sanitarias y certificados.</li>
+                </ul>
+            </div>
+            <button onclick="nextSlide(3)" id="t-s2-btn" class="btn btn-call" style="background-color: #b39ddb;">Siguiente ➔</button>
+            <button onclick="nextSlide(1)" id="t-s2-prev" class="btn btn-edit" style="margin-top: 5px;">⬅ Anterior</button>
+        </div>
+
+        <div id="slide-3" class="slide">
+            <div id="t-s3-title" class="slide-title">¡LISTO!</div>
+            <div class="slide-img">✅🚀</div>
+            <div id="t-s3-text" class="slide-text" style="text-align: center;">
+                Al tocar guardar, tu tag quedará activo.<br><br>
+                Cualquier persona que lo escanee verá la info al instante y podrá contactarte.
+            </div>
+            <button onclick="closeTutorial()" id="t-s3-btn" class="btn btn-ws" style="background-color: #81c784;">Comenzar Registro</button>
+            <button onclick="nextSlide(2)" id="t-s3-prev" class="btn btn-edit" style="margin-top: 5px;">⬅ Anterior</button>
+        </div>
+
+        <div class="tutorial-dots">
+            <div id="dot-1" class="dot active"></div>
+            <div id="dot-2" class="dot"></div>
+            <div id="dot-3" class="dot"></div>
+        </div>
+    </div>
+
+    <!-- 3. VISTA 1: FICHA PÚBLICA -->
+    <div id="view-profile" class="hidden">
+        <div id="lost-alert-banner" class="lost-banner hidden">
+            <div id="lbl-lost-banner-title" class="lost-title">⚠️ ¡ESTOY PERDIDO! ⚠️</div>
+            <div id="lbl-lost-banner-text" class="lost-text">Por favor, comunicate urgente con mi familia. ¡Muchas gracias!</div>
+        </div>
+
+        <div class="photo-container">
+            <span class="floating-icon icon-heart-left">🤍</span>
+            <span class="floating-icon icon-star-right">⭐</span>
+            <img id="display-photo" class="pet-photo" src="" alt="Foto">
+            <span class="floating-icon icon-paw-bottom">🐾</span>
+        </div>
+
+        <h1 id="display-pet-name" class="pet-name"></h1>
+        
+        <div class="info-pill"><div class="pill-icon icon-owner">👤</div><div id="display-owner-name"></div></div>
+        <div class="info-pill"><div class="pill-icon icon-zone">📍</div><div id="display-address"></div></div>
+        <div class="info-pill"><div class="pill-icon icon-info">❗</div><div id="display-extra" style="font-size: 14px; line-height: 1.4;"></div></div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="toggleView('view-docs')" id="lbl-docs-btn" class="btn btn-docs">📁 Mis Documentos</button>
+            <button id="btn-location" class="btn btn-loc">📍 Enviar mi ubicación</button>
+            <a id="btn-whatsapp" class="btn btn-ws" target="_blank">💬 Enviar WhatsApp</a>
+            <a id="btn-call" class="btn btn-call">📞 Llamar a mi dueño</a>
+        </div>
+
+        <button onclick="openPinModal()" id="lbl-edit-btn" class="btn btn-edit">🔒 Editar ficha</button>
+    </div>
+
+    <!-- 4. VISTA 2: MIS DOCUMENTOS (PÚBLICA) -->
+    <div id="view-docs" class="docs-container hidden">
+        <h2 id="lbl-docs-title" style="color: var(--text-title); text-align: center; margin-bottom: 25px;">Mis Documentos</h2>
+        
+        <h3 id="lbl-health-title" style="font-size: 16px; color: #757575; margin-bottom: 10px; text-align: center;">🏥 Libreta Sanitaria</h3>
+        <div class="docs-block">
+            <div id="lbl-vet-label" class="docs-title">👨‍⚕️ Veterinario de Cabecera</div>
+            <div class="docs-text" id="display-vet-name">No registrado</div>
+            <a id="btn-vet-call" class="btn btn-call hidden" style="padding: 10px; margin-top: 10px; font-size: 14px; text-align: center;">📞 Llamar a la clínica</a>
+            
+            <div id="lbl-notes-label" class="docs-title" style="margin-top: 15px;">💉 Vacunas y Notas</div>
+            <div class="docs-text" id="display-medical-notes">Sin observaciones.</div>
+            
+            <div id="display-no-health-doc" class="no-doc-msg">No hay libreta adjunta.</div>
+            <a id="btn-health-doc-view" class="btn btn-docs hidden" target="_blank" style="background-color: #9fa8da; padding: 10px; font-size: 14px; margin-top: 10px; text-align: center;">📄 Ver Libreta / Certificado</a>
+        </div>
+
+        <hr style="border: 1px dashed #e1bee7; margin: 25px 0;">
+        <h3 id="lbl-other-docs" style="font-size: 16px; color: #757575; margin-bottom: 10px; text-align: center;">📁 Otros Documentos</h3>
+        <div class="docs-block" style="text-align: center;">
+            <div id="display-no-travel-doc" class="no-doc-msg">No hay otros documentos registrados.</div>
+            <a id="btn-travel-doc-view" class="btn btn-call hidden" target="_blank" style="background-color: #90caf9; padding: 10px; font-size: 14px;">📄 Ver Documento Adjunto</a>
+        </div>
+        
+        <button onclick="toggleView('view-profile')" class="btn btn-edit lbl-back-btn" style="color: #9fa8da; font-weight: 800;">⬅ Volver a la ficha principal</button>
+    </div>
+
+    <!-- 5. VISTA 3: FORMULARIO DE EDICIÓN -->
+    <div id="view-form" class="estetic-card hidden" style="text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="form-title" style="color: var(--text-title); margin: 0;">Activar TAG</h2>
+            <button onclick="openTutorial()" class="btn-help" title="Ver instrucciones" style="border:none; border-radius:50%; width:30px; height:30px; background:#ffe082; color:#ff8f00; font-weight:bold;">❓</button>
+        </div>
+        
+        <div id="lost-mode-box" class="hidden" style="background: #fff3e0; border: 2px solid #ffb74d; padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 20px;">
+            <p id="lost-mode-status-text" style="font-weight: 800; color: #f57c00; margin-bottom: 10px;">Estado: Tu mascota está a salvo 🏡</p>
+            <button type="button" onclick="toggleLostMode()" id="btn-toggle-lost" class="btn" style="background-color: #ef5350; margin: 0; font-size: 14px; padding: 10px;">🚨 Activar Alerta de Pérdida</button>
+        </div>
+
+        <form id="pet-form">
+            <div class="form-group"><input type="text" id="input-pet-name" placeholder="🐾 Nombre de la mascota" required></div>
+            <div class="form-group"><input type="text" id="input-owner-name" placeholder="👤 Nombre del dueño" required></div>
+            <div class="form-group"><input type="tel" id="input-phone" placeholder="📱 Tu Teléfono (Ej: 1123456789)" required></div>
+            <div class="form-group"><input type="text" id="input-address" placeholder="📍 Zona o Dirección" required></div>
+            <div class="form-group"><textarea id="input-extra" rows="3" placeholder="❗ Alergias, esterilización, conducta, etc."></textarea></div>
+            
+            <div class="form-group" style="background: white; padding: 15px; border-radius: 20px; margin-top: 15px; text-align: center;">
+                <label id="lbl-photo-label" style="font-size: 13px; color: #9fa8da; font-weight: 700; display: block; text-align: left;">📸 Foto de Perfil (Mascota):</label>
+                <input type="file" id="input-photo" accept="image/*" onchange="previewNewFile('photo')" style="padding: 10px 0; width: 100%;">
+                <div id="new-photo-preview" class="hidden" style="margin-top: 8px; font-size: 12px; color: #81c784; font-weight: 700;">
+                    ✓ Archivo seleccionado listo para guardar
+                    <span onclick="clearNewFile('photo')" style="color: #ef5350; cursor: pointer; margin-left: 10px; text-decoration: underline;">Quitar selección</span>
+                </div>
+                <div id="del-photo-btn" class="del-file-btn hidden" onclick="deleteSpecificFile('photo')">🗑️ Borrar foto actual</div>
+            </div>
+
+            <hr style="border: 1px dashed #e1bee7; margin: 25px 0;">
+            <h3 id="lbl-form-docs-section" style="color: #9fa8da; font-size: 16px; margin-bottom: 15px; text-align: center;">📁 Mis Documentos</h3>
+
+            <div class="form-group"><input type="text" id="input-vet-name" placeholder="👨‍⚕️ Nombre Clínica o Veterinario"></div>
+            <div class="form-group"><input type="tel" id="input-vet-phone" placeholder="📞 Teléfono del Veterinario"></div>
+            <div class="form-group"><textarea id="input-medical-notes" rows="3" placeholder="💉 Historial de vacunas, cirugías..."></textarea></div>
+            
+            <div class="form-group" style="background: white; padding: 15px; border-radius: 20px; text-align: center;">
+                <label id="lbl-form-health-doc" style="font-size: 13px; color: #9fa8da; font-weight: 700; display: block; text-align: left;">🏥 Libreta Sanitaria (Foto o PDF):</label>
+                <input type="file" id="input-doc" accept="image/*,application/pdf" onchange="previewNewFile('doc')" style="padding: 10px 0; width: 100%;">
+                <div id="new-doc-preview" class="hidden" style="margin-top: 8px; font-size: 12px; color: #81c784; font-weight: 700;">
+                    ✓ Libreta seleccionada lista para guardar
+                    <span onclick="clearNewFile('doc')" style="color: #ef5350; cursor: pointer; margin-left: 10px; text-decoration: underline;">Quitar selección</span>
+                </div>
+                <div id="del-doc-btn" class="del-file-btn hidden" onclick="deleteSpecificFile('doc')">🗑️ Borrar archivo actual</div>
+                
+                <hr style="border: 1px solid #f5f5f5; margin: 15px 0;">
+
+                <label id="lbl-form-other-doc" style="font-size: 13px; color: #9fa8da; font-weight: 700; display: block; text-align: left;">📁 Documentos de viaje, SENASA, etc.:</label>
+                <input type="file" id="input-travel-doc" accept="image/*,application/pdf" onchange="previewNewFile('travel')" style="padding: 10px 0; width: 100%;">
+                <div id="new-travel-preview" class="hidden" style="margin-top: 8px; font-size: 12px; color: #81c784; font-weight: 700;">
+                    ✓ Documento seleccionado listo para guardar
+                    <span onclick="clearNewFile('travel')" style="color: #ef5350; cursor: pointer; margin-left: 10px; text-decoration: underline;">Quitar selección</span>
+                </div>
+                <div id="del-travel-btn" class="del-file-btn hidden" onclick="deleteSpecificFile('travel')">🗑️ Borrar archivo actual</div>
+            </div>
+
+            <div class="form-group" style="background: white; padding: 15px; border-radius: 20px; text-align: center; margin-top: 25px;">
+                <label id="lbl-pin-label" style="font-size: 13px; color: #ff8a80; font-weight: 700;">🔒 PIN de seguridad (4 dígitos)</label>
+                <input type="password" id="input-pin" maxlength="4" placeholder="Ej: 1234" required style="text-align: center; letter-spacing: 5px; font-size: 18px; margin-top: 10px; background: #fff5f5;">
+                
+                <hr style="border: 1px solid #f5f5f5; margin: 15px 0;">
+                
+                <label id="lbl-email-label" style="font-size: 13px; color: #81d4fa; font-weight: 700; display: block;">📧 Email (Para recuperar el PIN)</label>
+                <div style="font-size: 11px; color: #bdbdbd; margin-bottom: 10px;" id="lbl-email-sub">No será público, es solo como método de rescate.</div>
+                <input type="email" id="input-email" placeholder="tu@correo.com" required style="text-align: center; margin-bottom: 10px;">
+                <input type="email" id="input-email-confirm" placeholder="Repetí tu correo" required style="text-align: center;">
+            </div>
+
+            <button type="submit" class="btn btn-call" style="background-color: #b39ddb;" id="btn-submit">Guardar</button>
+            <button type="button" onclick="showProfile(currentPetData)" id="lbl-cancel-btn" class="btn btn-edit" style="width: 100%;">Cancelar</button>
+            
+            <button type="button" onclick="resetTag()" id="btn-reset-tag" class="btn hidden" style="background-color: #ef5350; color: white; margin-top: 30px; margin-bottom: 10px; font-size: 14px;">⚠️ Borrar TODOS los datos (Resetear)</button>
+        </form>
+    </div>
+
+    <!-- MODALS DE SEGURIDAD -->
+    <div id="modal-pin" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div id="m-pin-title" class="modal-title">Ingresá tu PIN</div>
+            <input type="password" id="check-pin-input" maxlength="4" placeholder="••••" style="text-align: center; letter-spacing: 10px; font-size: 24px; margin-bottom: 15px; background: #f5f5f5;">
+            <button onclick="verifyPin()" id="m-pin-btn" class="btn btn-call" style="background-color: #9fa8da; padding: 12px;">Entrar</button>
+            <span onclick="openRecoveryModal()" id="m-pin-forgot" class="modal-btn-forgot">¿Olvidaste tu PIN?</span>
+            <button onclick="closeModals()" id="m-pin-cancel" class="btn btn-edit" style="margin-top: 10px; width: 100%;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-recovery" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div id="m-rec-title" class="modal-title">Recuperar PIN</div>
+            <div id="m-rec-desc" style="font-size: 13px; color: #757575; margin-bottom: 15px;">Ingresá el correo electrónico con el que registraste esta mascota para validar tu identidad.</div>
+            <input type="email" id="check-email-input" placeholder="tu@correo.com" style="text-align: center; margin-bottom: 15px; background: #f5f5f5;">
+            <button onclick="verifyRecoveryEmail()" id="m-rec-btn" class="btn btn-loc" style="padding: 12px;">Verificar Correo</button>
+            <button onclick="closeModals()" class="btn btn-edit" style="margin-top: 15px; width: 100%;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-new-pin" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div id="m-new-title" class="modal-title">Creá un nuevo PIN</div>
+            <input type="password" id="new-pin-input" maxlength="4" placeholder="••••" style="text-align: center; letter-spacing: 10px; font-size: 24px; margin-bottom: 15px; background: #fff5f5;">
+            <button onclick="saveNewPin()" id="m-new-btn" class="btn btn-ws" style="padding: 12px;">Guardar nuevo PIN</button>
+        </div>
+    </div>
+
+    <!-- FOOTER TAG ID -->
+    <div id="footer-tag-id" class="hidden" style="text-align: center; margin-top: 30px; padding-bottom: 15px; font-size: 11px; color: #d1d1d1; font-weight: 800; letter-spacing: 1px;">
+        PETNIK TAG ID: <span id="display-tag-id"></span>
+    </div>
+
+</div>
+
+<script>
+    window.onerror = function(message, source, lineno, colno, error) {
+        document.getElementById('loading').innerHTML = "⚠️ Hubo un error en el código y se detuvo la ejecución.<br><br>Detalle:<br><span style='color:red'>" + message + "</span>";
+    };
+
+    const SUPABASE_URL = "https://cjlnvklthzumnacswqeo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_jYyO10L2UJw8KVmXL-xYxw_8JfMxXws";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const tagId = urlParams.get('id');
+    let currentPetData = null;
+
+    async function hashText(text) {
+        const msgBuffer = new TextEncoder().encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    const translations = {
+        es: {
+            loading: "Cargando Petnik...",
+            landingSubtitle: "La chapita inteligente definitiva",
+            bt1: "Escaneo Rápido",
+            bd1: "Funciona con tecnología NFC. No necesita de apps; se lee apoyando el celular al instante.",
+            bt2: "Salud al instante",
+            bd2: "Llevá su libreta sanitaria y contacto directo del veterinario en su collar.",
+            bt3: "Modo Alerta Perdido",
+            bd3: "Ante un extravío podés activar desde el panel la alerta de perdido; quien escanee verá la alerta y podrá comunicarse.",
+            bt4: "Datos 100% Editables",
+            bd4: "¿Te mudaste o cambiaste el celular? Actualizá la info desde tu panel sin cambiar la chapita.",
+            btnBuy: "🛍️ Quiero mi Petnik",
+            madeLove: "✨ Hecho con amor",
+            alreadyPetnik: "¿Ya tenés tu Petnik?",
+            ownerLoginBtn: "Ingresar a mi panel",
+            loc: "📍 Enviar mi ubicación",
+            ws: "💬 Enviar WhatsApp",
+            call: "📞 Llamar a mi dueño",
+            docsBtn: "📁 Mis Documentos",
+            editBtn: "🔒 Editar ficha",
+            docsTitle: "Mis Documentos",
+            healthTitle: "🏥 Libreta Sanitaria",
+            vetLabel: "👨‍⚕️ Veterinario de Cabecera",
+            notesLabel: "💉 Vacunas y Notas",
+            noHealthDoc: "No hay libreta adjunta.",
+            viewHealthDoc: "📄 Ver Libreta / Certificado",
+            otherDocs: "📁 Otros Documentos",
+            noOtherDoc: "No hay otros documentos registrados.",
+            viewOtherDoc: "📄 Ver Documento Adjunto",
+            backBtn: "⬅ Volver a la ficha",
+            vetCall: "📞 Llamar a la clínica",
+            formTitle: "Activar TAG",
+            editTitle: "Editar TAG",
+            saveBtn: "Guardar",
+            savingBtn: "Guardando...",
+            cancelBtn: "Cancelar",
+            pPetName: "🐾 Nombre de la mascota",
+            pOwnerName: "👤 Nombre del dueño",
+            pPhone: "📱 Tu Teléfono (Ej: 1123456789)",
+            pAddress: "📍 Zona o Dirección",
+            pExtra: "❗ Alergias, esterilización, conducta, etc.",
+            pVetName: "👨‍⚕️ Nombre Clínica o Veterinario",
+            pVetPhone: "📞 Teléfono del Veterinario",
+            pNotes: "💉 Historial de vacunas, cirugías...",
+            lblPhoto: "📸 Foto de Perfil (Mascota):",
+            lblFormDocs: "📁 Mis Documentos",
+            lblFormHealth: "🏥 Libreta Sanitaria (Foto o PDF):",
+            lblFormOther: "📁 Documentos de viaje, SENASA, etc.:",
+            lblPin: "🔒 PIN de seguridad (4 dígitos)",
+            lblEmail: "📧 Email (Para recuperar el PIN)",
+            lblEmailSub: "No será público, es solo como método de rescate.",
+            pEmail: "tu@correo.com",
+            pEmailConf: "Repetí tu correo",
+            noExtra: "Ninguna indicación especial.",
+            notRegistered: "No registrado",
+            noNotes: "Sin observaciones.",
+            delFileBtn: "🗑️ Borrar archivo actual",
+            resetBtn: "⚠️ Borrar TODOS los datos (Resetear)",
+            lostBannerTitle: "⚠️ ¡ESTOY PERDIDO! ⚠️",
+            lostBannerText: "Por favor, comunicate urgente con mi familia. ¡Muchas gracias!",
+            mPinTitle: "Ingresá tu PIN",
+            mPinBtn: "Entrar",
+            mPinForgot: "¿Olvidaste tu PIN?",
+            mPinCancel: "Cancelar",
+            mRecTitle: "Recuperar PIN",
+            mRecDesc: "Ingresá el correo electrónico con el que registraste esta mascota para validar tu identidad.",
+            mRecBtn: "Verificar Correo",
+            mNewTitle: "Creá un nuevo PIN",
+            mNewBtn: "Guardar nuevo PIN",
+            errPin: "❌ PIN incorrecto.",
+            errEmail: "❌ El correo no coincide con el registrado.",
+            errMatch: "❌ Los correos no coinciden.",
+            s1Title: "¡BIENVENIDOS A PETNIK!",
+            s1Text: "¡Qué alegría tenerte por acá!<br><br>Estás a punto de crear la identidad digital de tu mascota.",
+            s1Btn: "Siguiente ➔",
+            s2Title: "REGISTRAR A TU MASCOTA",
+            s2Text: `Una vez en el sitio, completa la ficha:
+                <ul>
+                    <li><b>Datos Básicos:</b> Nombre, tu nombre, teléfono y zona.</li>
+                    <li><b>Información importante:</b> Alergias, esterilización, conducta, etc.</li>
+                    <li><b>Foto:</b> Subí una imagen clara.</li>
+                    <li><b>PIN y Email:</b> Claves para editar a futuro.</li>
+                    <li><b>Mis Documentos:</b> Libretas y certificados.</li>
+                </ul>`,
+            s2Btn: "Siguiente ➔",
+            s3Title: "¡LISTO!",
+            s3Text: "Al tocar guardar, tu tag quedará activo.<br><br>Cualquier persona que lo escanee verá la info al instante y podrá contactarte.",
+            s3Btn: "Comenzar Registro"
+        },
+        en: {
+            loading: "Loading Petnik...",
+            landingSubtitle: "The ultimate smart pet tag",
+            bt1: "Quick NFC Scan",
+            bd1: "Powered by NFC technology. No apps required; read instantly by tapping the phone.",
+            bt2: "Instant Health",
+            bd2: "Keep health records and direct vet contact right on their collar.",
+            bt3: "Lost Alert Mode",
+            bd3: "In case of loss, activate the alert from your panel. Anyone who scans it will see the warning and can reach out.",
+            bt4: "100% Editable Data",
+            bd4: "Moved or changed phones? Update info from your panel without replacing the tag.",
+            btnBuy: "🛍️ Get my Petnik",
+            madeLove: "✨ Made with love",
+            alreadyPetnik: "Already have your Petnik?",
+            ownerLoginBtn: "Log in to my panel",
+            loc: "📍 Send my location",
+            ws: "💬 Send WhatsApp",
+            call: "📞 Call my owner",
+            docsBtn: "📁 My Documents",
+            editBtn: "🔒 Edit profile",
+            docsTitle: "My Documents",
+            healthTitle: "🏥 Health Record",
+            vetLabel: "👨‍⚕️ Main Veterinarian",
+            notesLabel: "💉 Vaccines & Notes",
+            noHealthDoc: "No health record attached.",
+            viewHealthDoc: "📄 View Record",
+            otherDocs: "📁 Other Documents",
+            noOtherDoc: "No other documents.",
+            viewOtherDoc: "📄 View Document",
+            backBtn: "⬅ Back to profile",
+            vetCall: "📞 Call clinic",
+            formTitle: "Activate TAG",
+            editTitle: "Edit TAG",
+            saveBtn: "Save",
+            savingBtn: "Saving...",
+            cancelBtn: "Cancel",
+            pPetName: "🐾 Pet's Name",
+            pOwnerName: "👤 Owner's Name",
+            pPhone: "📱 Your Phone (Ex: +123456789)",
+            pAddress: "📍 Area or Address",
+            pExtra: "❗ Allergies, sterilization, behavior, etc.",
+            pVetName: "👨‍⚕️ Clinic or Vet Name",
+            pVetPhone: "📞 Vet's Phone",
+            pNotes: "💉 Vaccines history, surgeries...",
+            lblPhoto: "📸 Profile Photo (Pet):",
+            lblFormDocs: "📁 My Documents",
+            lblFormHealth: "🏥 Health Record (Photo or PDF):",
+            lblFormOther: "📁 Travel documents, SENASA, etc.:",
+            lblPin: "🔒 Security PIN (4 digits)",
+            lblEmail: "📧 Recovery Email",
+            lblEmailSub: "Will not be public.",
+            pEmail: "you@email.com",
+            pEmailConf: "Repeat your email",
+            noExtra: "No special indications.",
+            notRegistered: "Not registered",
+            noNotes: "No observations.",
+            delFileBtn: "🗑️ Delete file",
+            resetBtn: "⚠️ Delete ALL data",
+            lostBannerTitle: "⚠️ I AM LOST! ⚠️",
+            lostBannerText: "Please contact my family urgently. Thank you so much!",
+            mPinTitle: "Enter your PIN",
+            mPinBtn: "Enter",
+            mPinForgot: "Forgot your PIN?",
+            mPinCancel: "Cancel",
+            mRecTitle: "Recover PIN",
+            mRecDesc: "Enter your registered email.",
+            mRecBtn: "Verify Email",
+            mNewTitle: "Create new PIN",
+            mNewBtn: "Save new PIN",
+            errPin: "❌ Incorrect PIN.",
+            errEmail: "❌ Email does not match.",
+            errMatch: "❌ Emails do not match.",
+            s1Title: "WELCOME TO PETNIK!",
+            s1Text: "We are so glad to have you here!<br><br>You are about to create your pet's digital identity.",
+            s1Btn: "Next ➔",
+            s2Title: "REGISTER YOUR PET",
+            s2Text: `Complete the form with:
+                <ul>
+                    <li><b>Basic Info:</b> Names, phone, area.</li>
+                    <li><b>Important info:</b> Allergies, behavior.</li>
+                    <li><b>Photo:</b> Clear picture.</li>
+                    <li><b>PIN & Email:</b> For editing later.</li>
+                    <li><b>Docs:</b> Health records.</li>
+                </ul>`,
+            s2Btn: "Next ➔",
+            s3Title: "READY!",
+            s3Text: "By clicking save, your tag will be active.",
+            s3Btn: "Start Registration"
+        },
+        pt: {
+            loading: "Carregando Petnik...",
+            landingSubtitle: "A tag inteligente definitiva",
+            bt1: "Leitura Rápida NFC",
+            bd1: "Funciona com tecnologia NFC. Sem apps; lê-se aproximando o celular na hora.",
+            bt2: "Saúde Instantânea",
+            bd2: "Leve a carteira de vacinação e o contato do veterinário na coleira.",
+            bt3: "Modo Alerta Perdido",
+            bd3: "Em caso de extravio, ative o alerta no painel. Quem escanear verá o aviso e poderá entrar em contato.",
+            bt4: "Dados 100% Editáveis",
+            bd4: "Mudou de casa ou celular? Atualize as infos direto no painel sem trocar a tag.",
+            btnBuy: "🛍️ Quero meu Petnik",
+            madeLove: "✨ Feito com amor",
+            alreadyPetnik: "Já tem seu Petnik?",
+            ownerLoginBtn: "Entrar no meu painel",
+            loc: "📍 Enviar localização",
+            ws: "💬 Enviar WhatsApp",
+            call: "📞 Ligar para meu dono",
+            docsBtn: "📁 Meus Documentos",
+            editBtn: "🔒 Editar perfil",
+            docsTitle: "Meus Documentos",
+            healthTitle: "🏥 Carteira de Vacinação",
+            vetLabel: "👨‍⚕️ Veterinário Responsável",
+            notesLabel: "💉 Vacinas e Notas",
+            noHealthDoc: "Nenhuma carteira anexada.",
+            viewHealthDoc: "📄 Ver Carteira",
+            otherDocs: "📁 Outros Documentos",
+            noOtherDoc: "Nenhum outro documento.",
+            viewOtherDoc: "📄 Ver Documento",
+            backBtn: "⬅ Voltar ao perfil",
+            vetCall: "📞 Ligar para clínica",
+            formTitle: "Ativar TAG",
+            editTitle: "Editar TAG",
+            saveBtn: "Salvar",
+            savingBtn: "Salvando...",
+            cancelBtn: "Cancelar",
+            pPetName: "🐾 Nome do pet",
+            pOwnerName: "👤 Nome do dono",
+            pPhone: "📱 Seu Telefone (Ex: +5511999999999)",
+            pAddress: "📍 Bairro ou Endereço",
+            pExtra: "❗ Alergias, castração, comportamento, etc.",
+            pVetName: "👨‍⚕️ Nome da Clínica ou Veterinário",
+            pVetPhone: "📞 Telefone do Veterinário",
+            pNotes: "💉 Histórico de vacinas...",
+            lblPhoto: "📸 Foto de Perfil:",
+            lblFormDocs: "📁 Meus Documentos",
+            lblFormHealth: "🏥 Carteira de Vacinação:",
+            lblFormOther: "📁 Documentos de viagem, SENASA, etc.:",
+            lblPin: "🔒 PIN de segurança (4 dígitos)",
+            lblEmail: "📧 Email de Recuperação",
+            lblEmailSub: "Não será público.",
+            pEmail: "seu@email.com",
+            pEmailConf: "Repita seu e-mail",
+            noExtra: "Nenhuma indicação especial.",
+            notRegistered: "Não registrado",
+            noNotes: "Sem observações.",
+            delFileBtn: "🗑️ Apagar arquivo",
+            resetBtn: "⚠️ Apagar TODOS os dados",
+            lostBannerTitle: "⚠️ ESTOU PERDIDO! ⚠️",
+            lostBannerText: "Por favor, entre em contato urgente com minha família. Muito obrigado!",
+            mPinTitle: "Insira seu PIN",
+            mPinBtn: "Entrar",
+            mPinForgot: "Esqueceu seu PIN?",
+            mPinCancel: "Cancelar",
+            mRecTitle: "Recuperar PIN",
+            mRecDesc: "Insira o e-mail registrado.",
+            mRecBtn: "Verificar E-mail",
+            mNewTitle: "Criar novo PIN",
+            mNewBtn: "Salvar novo PIN",
+            errPin: "❌ PIN incorreto.",
+            errEmail: "❌ O e-mail não corresponde.",
+            errMatch: "❌ Os e-mails não coincidem.",
+            s1Title: "BEM-VINDOS AO PETNIK!",
+            s1Text: "Você está prestes a criar a identidade digital do seu pet.",
+            s1Btn: "Próximo ➔",
+            s2Title: "REGISTRAR SEU PET",
+            s2Text: `Preencha a ficha com:
+                <ul>
+                    <li><b>Dados Básicos:</b> Nomes, telefone, endereço.</li>
+                    <li><b>Info importante:</b> Alergias, comportamento.</li>
+                    <li><b>Foto:</b> Imagem clara.</li>
+                    <li><b>PIN e Email:</b> Para editar no futuro.</li>
+                    <li><b>Docs:</b> Carteiras.</li>
+                </ul>`,
+            s2Btn: "Próximo ➔",
+            s3Title: "PRONTO!",
+            s3Text: "Ao clicar em salvar, seu tag estará ativo.",
+            s3Btn: "Começar Cadastro"
+        }
+    };
+
+    function changeLanguage(lang) {
+        const t = translations[lang] || translations.es;
+        
+        document.getElementById('loading').innerText = t.loading;
+        document.getElementById('lbl-landing-subtitle').innerText = t.landingSubtitle;
+        
+        document.getElementById('b-t1').innerText = t.bt1;
+        document.getElementById('b-d1').innerText = t.bd1;
+        document.getElementById('b-t2').innerText = t.bt2;
+        document.getElementById('b-d2').innerText = t.bd2;
+        document.getElementById('b-t3').innerText = t.bt3;
+        document.getElementById('b-d3').innerText = t.bd3;
+        document.getElementById('b-t4').innerText = t.bt4;
+        document.getElementById('b-d4').innerText = t.bd4;
+        document.getElementById('btn-buy-petnik').innerText = t.btnBuy;
+        
+        document.getElementById('lbl-made-love').innerText = t.madeLove;
+        document.getElementById('lbl-already-petnik').innerText = t.alreadyPetnik;
+        document.getElementById('btn-owner-login').innerText = t.ownerLoginBtn;
+
+        document.getElementById('btn-location').innerHTML = t.loc;
+        document.getElementById('btn-whatsapp').innerHTML = t.ws;
+        document.getElementById('btn-call').innerHTML = t.call;
+        document.getElementById('lbl-docs-btn').innerHTML = t.docsBtn;
+        document.getElementById('lbl-edit-btn').innerHTML = t.editBtn;
+        
+        document.getElementById('lbl-docs-title').innerText = t.docsTitle;
+        document.getElementById('lbl-health-title').innerText = t.healthTitle;
+        document.getElementById('lbl-vet-label').innerText = t.vetLabel;
+        document.getElementById('lbl-notes-label').innerText = t.notesLabel;
+        document.getElementById('display-no-health-doc').innerText = t.noHealthDoc;
+        document.getElementById('btn-health-doc-view').innerText = t.viewHealthDoc;
+        document.getElementById('lbl-other-docs').innerText = t.otherDocs;
+        document.getElementById('display-no-travel-doc').innerText = t.noOtherDoc;
+        document.getElementById('btn-travel-doc-view').innerText = t.viewOtherDoc;
+        document.getElementById('btn-vet-call').innerHTML = t.vetCall;
+        
+        document.querySelectorAll('.lbl-back-btn').forEach(btn => btn.innerHTML = t.backBtn);
+
+        document.getElementById('lbl-lost-banner-title').innerText = t.lostBannerTitle;
+        document.getElementById('lbl-lost-banner-text').innerText = t.lostBannerText;
+
+        if (!document.getElementById('view-form').classList.contains('hidden') && currentPetData && currentPetData.is_registered) {
+            document.getElementById('form-title').innerText = t.editTitle;
+        } else {
+            document.getElementById('form-title').innerText = t.formTitle;
+        }
+
+        document.getElementById('input-pet-name').placeholder = t.pPetName;
+        document.getElementById('input-owner-name').placeholder = t.pOwnerName;
+        document.getElementById('input-phone').placeholder = t.pPhone;
+        document.getElementById('input-address').placeholder = t.pAddress;
+        document.getElementById('input-extra').placeholder = t.pExtra;
+        document.getElementById('input-vet-name').placeholder = t.pVetName;
+        document.getElementById('input-vet-phone').placeholder = t.pVetPhone;
+        document.getElementById('input-medical-notes').placeholder = t.pNotes;
+        
+        document.getElementById('lbl-photo-label').innerText = t.lblPhoto;
+        document.getElementById('lbl-form-docs-section').innerText = t.lblFormDocs;
+        document.getElementById('lbl-form-health-doc').innerText = t.lblFormHealth;
+        document.getElementById('lbl-form-other-doc').innerText = t.lblFormOther;
+        document.getElementById('lbl-pin-label').innerText = t.lblPin;
+        document.getElementById('lbl-email-label').innerText = t.lblEmail;
+        document.getElementById('lbl-email-sub').innerText = t.lblEmailSub;
+        document.getElementById('input-email').placeholder = t.pEmail;
+        document.getElementById('input-email-confirm').placeholder = t.pEmailConf;
+        document.getElementById('check-email-input').placeholder = t.pEmail;
+
+        document.getElementById('btn-submit').innerText = t.saveBtn;
+        document.getElementById('lbl-cancel-btn').innerText = t.cancelBtn;
+
+        document.getElementById('del-photo-btn').innerText = t.delFileBtn;
+        document.getElementById('del-doc-btn').innerText = t.delFileBtn;
+        document.getElementById('del-travel-btn').innerText = t.delFileBtn;
+        document.getElementById('btn-reset-tag').innerText = t.resetBtn;
+
+        document.getElementById('m-pin-title').innerText = t.mPinTitle;
+        document.getElementById('m-pin-btn').innerText = t.mPinBtn;
+        document.getElementById('m-pin-forgot').innerText = t.mPinForgot;
+        document.getElementById('m-pin-cancel').innerText = t.mPinCancel;
+        document.getElementById('m-rec-title').innerText = t.mRecTitle;
+        document.getElementById('m-rec-desc').innerText = t.mRecDesc;
+        document.getElementById('m-rec-btn').innerText = t.mRecBtn;
+        document.getElementById('m-new-title').innerText = t.mNewTitle;
+        document.getElementById('m-new-btn').innerText = t.mNewBtn;
+
+        document.getElementById('t-s1-title').innerText = t.s1Title;
+        document.getElementById('t-s1-text').innerHTML = t.s1Text;
+        document.getElementById('t-s1-btn').innerHTML = t.s1Btn;
+        document.getElementById('t-s2-title').innerText = t.s2Title;
+        document.getElementById('t-s2-text').innerHTML = t.s2Text;
+        document.getElementById('t-s2-btn').innerHTML = t.s2Btn;
+        document.getElementById('t-s2-prev').innerText = t.prevBtn;
+        document.getElementById('t-s3-title').innerText = t.s3Title;
+        document.getElementById('t-s3-text').innerHTML = t.s3Text;
+        document.getElementById('t-s3-btn').innerHTML = t.s3Btn;
+        document.getElementById('t-s3-prev').innerText = t.prevBtn;
+
+        if (currentPetData && currentPetData.is_registered) {
+            document.getElementById('display-extra').innerText = currentPetData.extra_info || t.noExtra;
+            document.getElementById('display-vet-name').innerText = currentPetData.vet_name || t.notRegistered;
+            document.getElementById('display-medical-notes').innerText = currentPetData.medical_notes || t.noNotes;
+        }
+    }
+
+    async function init() {
+        try {
+            if (!tagId) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('view-landing').classList.remove('hidden');
+                return;
+            }
+            
+            document.querySelectorAll('.hidden-in-profile').forEach(el => el.style.display = 'none');
+            document.getElementById('internal-logo').classList.remove('hidden');
+            
+            document.getElementById('display-tag-id').innerText = tagId;
+            document.getElementById('footer-tag-id').classList.remove('hidden');
+            
+            let { data: pet, error } = await db.from('pets').select('*').eq('id', tagId).single();
+            document.getElementById('loading').classList.add('hidden');
+
+            if (!pet) {
+                await db.from('pets').insert([{ id: tagId, is_registered: false }]);
+                openTutorial(); 
+            } else if (!pet.is_registered) {
+                openTutorial(); 
+            } else {
+                currentPetData = pet;
+                showProfile(pet);
+            }
+        } catch (err) {
+            alert("Error de conexión: " + err.message);
+            document.getElementById('loading').innerHTML = "Error al conectar con la base de datos.";
+        }
+    }
+
+    async function ownerLogin() {
+        const idInput = document.getElementById('login-tag-id').value.trim();
+        const pinInput = document.getElementById('login-tag-pin').value.trim();
+
+        if (!idInput || pinInput.length !== 4) {
+            alert("Por favor ingresá un ID válido y tu PIN de 4 dígitos.");
+            return;
+        }
+
+        let { data: pet, error } = await db.from('pets').select('*').eq('id', idInput).single();
+        if (error || !pet) {
+            alert("No se encontró ninguna chapita con ese ID.");
+            return;
+        }
+
+        const hashedPin = await hashText(pinInput);
+
+        if (pet.pin === hashedPin || pet.pin === pinInput) {
+            currentPetData = pet;
+            window.location.href = `?id=${idInput}`;
+        } else {
+            alert("❌ PIN incorrecto.");
+        }
+    }
+
+    function toggleView(viewId) {
+        document.getElementById('view-profile').classList.add('hidden');
+        document.getElementById('view-docs').classList.add('hidden');
+        document.getElementById('view-tutorial').classList.add('hidden');
+        document.getElementById('view-form').classList.add('hidden');
+        document.getElementById('view-landing').classList.add('hidden');
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function openTutorial() {
+        toggleView('view-tutorial');
+        nextSlide(1);
+    }
+
+    function nextSlide(n) {
+        for(let i=1; i<=3; i++) {
+            document.getElementById('slide-'+i).classList.remove('active');
+            document.getElementById('dot-'+i).classList.remove('active');
+        }
+        document.getElementById('slide-'+n).classList.add('active');
+        document.getElementById('dot-'+n).classList.add('active');
+    }
+
+    function closeTutorial() {
+        showForm(currentPetData !== null && currentPetData.is_registered); 
+    }
+
+    function getCleanPhone(rawPhone) {
+        if(!rawPhone) return "";
+        let clean = rawPhone.replace(/\D/g, ''); 
+        if (!rawPhone.trim().startsWith('+')) {
+            if (clean.startsWith('0')) clean = clean.substring(1);
+            if (clean.length === 10) clean = '549' + clean;
+            else if (!clean.startsWith('54') && clean.length > 8) clean = '549' + clean;
+        }
+        return clean;
+    }
+
+    function showProfile(pet) {
+        const currentLang = document.getElementById('lang-select').value;
+        const t = translations[currentLang] || translations.es;
+
+        document.getElementById('display-photo').src = pet.photo_url || 'https://via.placeholder.com/150/e1bee7/ffffff?text=Mascota';
+        document.getElementById('display-pet-name').innerHTML = pet.pet_name;
+        document.getElementById('display-owner-name').innerText = pet.owner_name;
+        document.getElementById('display-address').innerText = pet.address_zone;
+        
+        document.getElementById('display-extra').innerText = pet.extra_info || t.noExtra;
+        document.getElementById('display-vet-name').innerText = pet.vet_name || t.notRegistered;
+        document.getElementById('display-medical-notes').innerText = pet.medical_notes || t.noNotes;
+        
+        if (pet.is_lost) {
+            document.getElementById('lost-alert-banner').classList.remove('hidden');
+        } else {
+            document.getElementById('lost-alert-banner').classList.add('hidden');
+        }
+        
+        const cleanPhone = getCleanPhone(pet.phone);
+        document.getElementById('btn-whatsapp').href = `https://wa.me/${cleanPhone}?text=Hola!%20Tengo%20a%20tu%20mascota%20${encodeURIComponent(pet.pet_name)}`;
+        document.getElementById('btn-call').href = `tel:${cleanPhone}`;
+        
+        const btnVetCall = document.getElementById('btn-vet-call');
+        if(pet.vet_phone) {
+            const cleanVetPhone = getCleanPhone(pet.vet_phone);
+            btnVetCall.href = `tel:${cleanVetPhone}`;
+            btnVetCall.classList.remove('hidden');
+        }
+
+        const btnHealthDoc = document.getElementById('btn-health-doc-view');
+        const msgNoHealthDoc = document.getElementById('display-no-health-doc');
+        if(pet.doc_url) {
+            btnHealthDoc.href = pet.doc_url;
+            btnHealthDoc.classList.remove('hidden');
+            msgNoHealthDoc.classList.add('hidden');
+        } else {
+            btnHealthDoc.classList.add('hidden');
+            msgNoHealthDoc.classList.remove('hidden');
+        }
+
+        const btnTravelDoc = document.getElementById('btn-travel-doc-view');
+        const msgNoTravelDoc = document.getElementById('display-no-travel-doc');
+        if(pet.travel_doc_url) {
+            btnTravelDoc.href = pet.travel_doc_url;
+            btnTravelDoc.classList.remove('hidden');
+            msgNoTravelDoc.classList.add('hidden');
+        } else {
+            btnTravelDoc.classList.add('hidden');
+            msgNoTravelDoc.classList.remove('hidden');
+        }
+
+        toggleView('view-profile');
+        changeLanguage(currentLang);
+    }
+
+    document.getElementById('btn-location').addEventListener('click', () => {
+        if (!navigator.geolocation) { alert("Ubicación no soportada."); return; }
+        const btn = document.getElementById('btn-location');
+        const originalText = btn.innerText;
+        btn.innerText = "📍 Obteniendo ubicación...";
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                btn.innerText = originalText;
+                const mapsLink = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+                const cleanPhone = getCleanPhone(currentPetData.phone);
+                const message = `¡Urgente! Encontré a ${currentPetData.pet_name}. Estoy exactamente acá: ${mapsLink}`;
+                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+            },
+            (error) => { btn.innerText = originalText; alert("Por favor, aceptá los permisos de ubicación en el navegador."); }
+        );
+    });
+
+    function showForm(isEditing = false) {
+        toggleView('view-form');
+        const currentLang = document.getElementById('lang-select').value;
+        const t = translations[currentLang] || translations.es;
+
+        // Limpiar selecciones previas de archivos nuevos al abrir el formulario
+        clearNewFile('photo');
+        clearNewFile('doc');
+        clearNewFile('travel');
+
+        if (isEditing && currentPetData) {
+            document.getElementById('form-title').innerText = t.editTitle;
+            document.getElementById('input-pet-name').value = currentPetData.pet_name;
+            document.getElementById('input-owner-name').value = currentPetData.owner_name;
+            document.getElementById('input-phone').value = currentPetData.phone;
+            document.getElementById('input-address').value = currentPetData.address_zone;
+            document.getElementById('input-extra').value = currentPetData.extra_info;
+            document.getElementById('input-vet-name').value = currentPetData.vet_name || '';
+            document.getElementById('input-vet-phone').value = currentPetData.vet_phone || '';
+            document.getElementById('input-medical-notes').value = currentPetData.medical_notes || '';
+            
+            if (currentPetData.recovery_email) {
+                document.getElementById('input-email').value = currentPetData.recovery_email;
+                document.getElementById('input-email-confirm').value = currentPetData.recovery_email;
+            }
+            
+            if(currentPetData.photo_url) document.getElementById('del-photo-btn').classList.remove('hidden');
+            else document.getElementById('del-photo-btn').classList.add('hidden');
+
+            if(currentPetData.doc_url) document.getElementById('del-doc-btn').classList.remove('hidden');
+            else document.getElementById('del-doc-btn').classList.add('hidden');
+
+            if(currentPetData.travel_doc_url) document.getElementById('del-travel-btn').classList.remove('hidden');
+            else document.getElementById('del-travel-btn').classList.add('hidden');
+            
+            document.getElementById('btn-reset-tag').classList.remove('hidden');
+            document.getElementById('lost-mode-box').classList.remove('hidden');
+            updateLostModeUI();
+        } else {
+            document.getElementById('form-title').innerText = t.formTitle;
+            document.getElementById('del-photo-btn').classList.add('hidden');
+            document.getElementById('del-doc-btn').classList.add('hidden');
+            document.getElementById('del-travel-btn').classList.add('hidden');
+            document.getElementById('btn-reset-tag').classList.add('hidden');
+            document.getElementById('lost-mode-box').classList.add('hidden');
+        }
+    }
+
+    function updateLostModeUI() {
+        const statusText = document.getElementById('lost-mode-status-text');
+        const btnToggle = document.getElementById('btn-toggle-lost');
+        if (currentPetData.is_lost) {
+            statusText.innerText = "🚨 Estado: ¡Alerta de pérdida ACTIVA!";
+            statusText.style.color = "#c62828";
+            btnToggle.innerText = "🏡 Desactivar Alerta (Ya apareció)";
+            btnToggle.style.backgroundColor = "#81c784";
+        } else {
+            statusText.innerText = "🏡 Estado: Tu mascota está a salvo";
+            statusText.style.color = "#f57c00";
+            btnToggle.innerText = "🚨 Activar Alerta de Pérdida";
+            btnToggle.style.backgroundColor = "#ef5350";
+        }
+    }
+
+    async function toggleLostMode() {
+        const newState = !currentPetData.is_lost;
+        const { error } = await db.from('pets').update({ is_lost: newState }).eq('id', tagId);
+        if (!error) {
+            currentPetData.is_lost = newState;
+            updateLostModeUI();
+            alert(newState ? "⚠️ ¡Alerta de pérdida activada con éxito!" : "🏡 ¡Alerta desactivada! Tu mascota figura a salvo.");
+        } else {
+            alert("Error al actualizar el estado de pérdida.");
+        }
+    }
+
+    function closeModals() {
+        document.getElementById('modal-pin').classList.add('hidden');
+        document.getElementById('modal-recovery').classList.add('hidden');
+        document.getElementById('modal-new-pin').classList.add('hidden');
+    }
+
+    function openPinModal() {
+        document.getElementById('check-pin-input').value = "";
+        document.getElementById('modal-pin').classList.remove('hidden');
+    }
+
+    async function verifyPin() {
+        const userPin = document.getElementById('check-pin-input').value;
+        const currentLang = document.getElementById('lang-select').value;
+        const t = translations[currentLang] || translations.es;
+        
+        const hashedPin = await hashText(userPin);
+
+        if (hashedPin === currentPetData.pin || userPin === currentPetData.pin) { 
+            closeModals();
+            showForm(true); 
+        } else { 
+            alert(t.errPin); 
+        }
+    }
+
+    function openRecoveryModal() {
+        document.getElementById('modal-pin').classList.add('hidden');
+        document.getElementById('check-email-input').value = "";
+        document.getElementById('modal-recovery').classList.remove('hidden');
+    }
+
+    function verifyRecoveryEmail() {
+        const userEmail = document.getElementById('check-email-input').value.trim().toLowerCase();
+        const storedEmail = currentPetData.recovery_email ? currentPetData.recovery_email.toLowerCase() : "";
+        const currentLang = document.getElementById('lang-select').value;
+        const t = translations[currentLang] || translations.es;
+
+        if (userEmail === storedEmail && storedEmail !== "") {
+            document.getElementById('modal-recovery').classList.add('hidden');
+            document.getElementById('new-pin-input').value = "";
+            document.getElementById('modal-new-pin').classList.remove('hidden');
+        } else {
+            alert(t.errEmail);
+        }
+    }
+
+    async function saveNewPin() {
+        const newPin = document.getElementById('new-pin-input').value;
+        if (newPin.length !== 4) return;
+        
+        const hashedPin = await hashText(newPin);
+
+        const { error } = await db.from('pets').update({ pin: hashedPin }).eq('id', tagId);
+        if (!error) {
+            currentPetData.pin = hashedPin;
+            closeModals();
+            showForm(true);
+        } else {
+            alert("Error");
+        }
+    }
+
+    function compressImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000; const MAX_HEIGHT = 1000;
+                    let width = img.width; let height = img.height;
+                    if (width > height && width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } 
+                    else if (height > MAX_WIDTH) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => { resolve(new File([blob], "compressed.jpg", { type: "image/jpeg" })); }, "image/jpeg", 0.7);
+                };
+            };
+        });
+    }
+
+    async function deleteOldFile(fileUrl, bucketName) {
+        if (!fileUrl) return;
+        try {
+            const parts = fileUrl.split('/');
+            const fileName = parts[parts.length - 1];
+            if (fileName) {
+                await db.storage.from(bucketName).remove([fileName]);
+            }
+        } catch (e) { console.log(e); }
+    }
+    
+    // NUEVA FUNCIÓN: Borra el archivo y MANTIENE en la pestaña de edición actualizada
+    async function deleteSpecificFile(fileType) {
+        if(!confirm("¿Estás seguro de que querés borrar este archivo?")) return;
+        
+        let updateData = {};
+        if (fileType === 'photo') {
+            await deleteOldFile(currentPetData.photo_url, 'pet-photos');
+            updateData = { photo_url: null };
+            currentPetData.photo_url = null;
+            document.getElementById('del-photo-btn').classList.add('hidden');
+        } else if (fileType === 'doc') {
+            await deleteOldFile(currentPetData.doc_url, 'pet-docs');
+            updateData = { doc_url: null };
+            currentPetData.doc_url = null;
+            document.getElementById('del-doc-btn').classList.add('hidden');
+        } else if (fileType === 'travel') {
+            await deleteOldFile(currentPetData.travel_doc_url, 'pet-docs');
+            updateData = { travel_doc_url: null };
+            currentPetData.travel_doc_url = null;
+            document.getElementById('del-travel-btn').classList.add('hidden');
+        }
+
+        const { error } = await db.from('pets').update(updateData).eq('id', tagId);
+        if (error) {
+            alert("Hubo un error al borrar el archivo.");
+        } else {
+            alert("✓ Archivo borrado con éxito.");
+        }
+    }
+
+    // Funciones para permitir quitar la selección de un archivo NUEVO antes de guardar
+    function previewNewFile(type) {
+        const input = document.getElementById(type === 'photo' ? 'input-photo' : (type === 'doc' ? 'input-doc' : 'input-travel-doc'));
+        const preview = document.getElementById(type === 'photo' ? 'new-photo-preview' : (type === 'doc' ? 'new-doc-preview' : 'new-travel-preview'));
+        if (input.files.length > 0) {
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
+    }
+
+    function clearNewFile(type) {
+        const input = document.getElementById(type === 'photo' ? 'input-photo' : (type === 'doc' ? 'input-doc' : 'input-travel-doc'));
+        const preview = document.getElementById(type === 'photo' ? 'new-photo-preview' : (type === 'doc' ? 'new-doc-preview' : 'new-travel-preview'));
+        input.value = "";
+        preview.classList.add('hidden');
+    }
+
+    async function resetTag() {
+        if(!confirm("⚠️ ATENCIÓN: ¿Estás seguro de borrar TODOS los datos de la mascota? Esta acción no se puede deshacer y la chapita quedará vacía.")) return;
+        
+        toggleView('view-tutorial'); 
+        document.getElementById('loading').innerHTML = "Borrando datos...";
+        document.getElementById('loading').classList.remove('hidden');
+
+        if (currentPetData.photo_url) await deleteOldFile(currentPetData.photo_url, 'pet-photos');
+        if (currentPetData.doc_url) await deleteOldFile(currentPetData.doc_url, 'pet-docs');
+        if (currentPetData.travel_doc_url) await deleteOldFile(currentPetData.travel_doc_url, 'pet-docs');
+
+        const resetData = {
+            is_registered: false,
+            pet_name: null, owner_name: null, phone: null, address_zone: null,
+            extra_info: null, vet_name: null, vet_phone: null, medical_notes: null,
+            pin: null, recovery_email: null, photo_url: null, doc_url: null, travel_doc_url: null, is_lost: false
+        };
+
+        await db.from('pets').update(resetData).eq('id', tagId);
+        location.reload(); 
+    }
+
+    document.getElementById('pet-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentLang = document.getElementById('lang-select').value;
+        const t = translations[currentLang] || translations.es;
+        
+        const email1 = document.getElementById('input-email').value.trim();
+        const email2 = document.getElementById('input-email-confirm').value.trim();
+        if (email1.toLowerCase() !== email2.toLowerCase()) {
+            alert(t.errMatch); return;
+        }
+
+        const btnSubmit = document.getElementById('btn-submit');
+        btnSubmit.innerText = t.savingBtn; btnSubmit.disabled = true;
+
+        let photoUrl = currentPetData ? currentPetData.photo_url : '';
+        const photoInput = document.getElementById('input-photo');
+        if (photoInput.files.length > 0) {
+            if (currentPetData && currentPetData.photo_url) await deleteOldFile(currentPetData.photo_url, 'pet-photos');
+            const compressedFile = await compressImage(photoInput.files[0]);
+            const fName = `${tagId}_${Date.now()}.jpg`;
+            let { error: e1 } = await db.storage.from('pet-photos').upload(fName, compressedFile);
+            if (!e1) { const { data } = db.storage.from('pet-photos').getPublicUrl(fName); photoUrl = data.publicUrl; }
+        }
+
+        let docUrl = currentPetData ? currentPetData.doc_url : '';
+        const docInput = document.getElementById('input-doc');
+        if (docInput.files.length > 0) {
+            if (currentPetData && currentPetData.doc_url) await deleteOldFile(currentPetData.doc_url, 'pet-docs');
+            const docFile = docInput.files[0];
+            let finalDoc = docFile;
+            let ext = docFile.name.split('.').pop().toLowerCase();
+            if(docFile.type.startsWith('image/')) { finalDoc = await compressImage(docFile); ext = 'jpg'; }
+            
+            const docName = `doc_${tagId}_${Date.now()}.${ext}`;
+            let { error: e2 } = await db.storage.from('pet-docs').upload(docName, finalDoc);
+            if (!e2) { const { data } = db.storage.from('pet-docs').getPublicUrl(docName); docUrl = data.publicUrl; }
+        }
+
+        let travelDocUrl = currentPetData ? currentPetData.travel_doc_url : '';
+        const travelInput = document.getElementById('input-travel-doc');
+        if (travelInput.files.length > 0) {
+            if (currentPetData && currentPetData.travel_doc_url) await deleteOldFile(currentPetData.travel_doc_url, 'pet-docs');
+            const tFile = travelInput.files[0];
+            let tFinalDoc = tFile;
+            let tExt = tFile.name.split('.').pop().toLowerCase();
+            if(tFile.type.startsWith('image/')) { tFinalDoc = await compressImage(tFile); tExt = 'jpg'; }
+            
+            const tDocName = `travel_${tagId}_${Date.now()}.${tExt}`;
+            let { error: e3 } = await db.storage.from('pet-docs').upload(tDocName, tFinalDoc);
+            if (!e3) { const { data } = db.storage.from('pet-docs').getPublicUrl(tDocName); travelDocUrl = data.publicUrl; }
+        }
+
+        const finalPinToSave = await hashText(document.getElementById('input-pin').value);
+
+        const updatedData = {
+            is_registered: true,
+            pet_name: document.getElementById('input-pet-name').value,
+            owner_name: document.getElementById('input-owner-name').value,
+            phone: document.getElementById('input-phone').value,
+            address_zone: document.getElementById('input-address').value,
+            extra_info: document.getElementById('input-extra').value,
+            vet_name: document.getElementById('input-vet-name').value,
+            vet_phone: document.getElementById('input-vet-phone').value,
+            medical_notes: document.getElementById('input-medical-notes').value,
+            pin: finalPinToSave,
+            recovery_email: email1,
+            photo_url: photoUrl,
+            doc_url: docUrl,
+            travel_doc_url: travelDocUrl
+        };
+
+        const { error } = await db.from('pets').update(updatedData).eq('id', tagId);
+        if (!error) { 
+            // Actualizamos los datos locales y volvemos a la vista de perfil sin recargar la página entera
+            currentPetData = updatedData;
+            showProfile(currentPetData);
+        } else { 
+            alert("Error al guardar."); 
+            btnSubmit.innerText = t.saveBtn; 
+            btnSubmit.disabled = false; 
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
